@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1088774030650",
+    "project_id": "books-d1214",
+    "storage_bucket": "books-d1214.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1088774030650:android:e5ed7762e288419bda7c03",
+        "android_client_info": {
+          "package_name": "za.ac.iie.opsc7311.orbit_books"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1088774030650-349etj3qtsbhuaat24g67k5a4fntjrcs.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBW9Ar_Kf8_bqKQtLLk0ukGWP4zXxcL-1I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1088774030650-349etj3qtsbhuaat24g67k5a4fntjrcs.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
