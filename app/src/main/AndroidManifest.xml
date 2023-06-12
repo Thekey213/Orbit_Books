@@ -12,6 +12,9 @@
         android:theme="@style/Theme.Orbit_Books"
         tools:targetApi="31">
         <activity
+            android:name=".BookDetailsActivity"
+            android:exported="false" />
+        <activity
             android:name=".CreateBookActivity"
             android:exported="false" />
         <activity

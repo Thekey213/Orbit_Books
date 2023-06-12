@@ -32,7 +32,9 @@ class ImagesActivity : AppCompatActivity() {
 
     private fun initVars() {
         firebaseFirestore = FirebaseFirestore.getInstance()
-        adapter = AuthorAdapter(emptyList())
+        adapter = AuthorAdapter(emptyList()) { book ->
+            navigateToBookDetails(book)
+        }
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
         binding.recyclerView.adapter = adapter
     }
@@ -52,4 +54,15 @@ class ImagesActivity : AppCompatActivity() {
                 Toast.makeText(this, "Error retrieving books: ${exception.message}", Toast.LENGTH_SHORT).show()
             }
     }
+
+    private fun navigateToBookDetails(book: BookData) {
+        val intent = Intent(this, BookDetailsActivity::class.java)
+        intent.putExtra("title", book.title)
+        intent.putExtra("description", book.description)
+        intent.putExtra("img", book.img)
+        intent.putExtra("author", book.author)
+        startActivity(intent)
+    }
 }
+
+
