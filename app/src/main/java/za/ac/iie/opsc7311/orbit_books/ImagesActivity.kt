@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.firebase.firestore.FirebaseFirestore
 import za.ac.iie.opsc7311.orbit_books.databinding.ActivityImagesBinding
 
+
 class ImagesActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityImagesBinding
@@ -32,9 +33,7 @@ class ImagesActivity : AppCompatActivity() {
 
     private fun initVars() {
         firebaseFirestore = FirebaseFirestore.getInstance()
-        adapter = AuthorAdapter(emptyList()) { book ->
-            navigateToBookDetails(book)
-        }
+        adapter = AuthorAdapter(emptyList(), this)
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
         binding.recyclerView.adapter = adapter
     }
@@ -54,15 +53,5 @@ class ImagesActivity : AppCompatActivity() {
                 Toast.makeText(this, "Error retrieving books: ${exception.message}", Toast.LENGTH_SHORT).show()
             }
     }
-
-    private fun navigateToBookDetails(book: BookData) {
-        val intent = Intent(this, BookDetailsActivity::class.java)
-        intent.putExtra("title", book.title)
-        intent.putExtra("description", book.description)
-        intent.putExtra("img", book.img)
-        intent.putExtra("author", book.author)
-        startActivity(intent)
-    }
 }
-
 

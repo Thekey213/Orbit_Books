@@ -1,5 +1,6 @@
 package za.ac.iie.opsc7311.orbit_books
 
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
@@ -12,13 +13,14 @@ import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
 import za.ac.iie.opsc7311.orbit_books.databinding.ActivityMainBinding
 import za.ac.iie.opsc7311.orbit_books.BookData
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
-
     private lateinit var binding: ActivityMainBinding
-    private lateinit var storageRef: StorageReference
+    private lateinit var firebaseStorage: FirebaseStorage
     private lateinit var firebaseFirestore: FirebaseFirestore
-    private var imageUri: Uri? = null
+    private lateinit var selectedImageUri: Uri
+    private lateinit var selectedPdfUri: Uri
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,82 +28,173 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        initVars()
-        registerClickEvents()
-    }
+        firebaseStorage = FirebaseStorage.getInstance()
+        firebaseFirestore = FirebaseFirestore.getInstance()
 
-    private fun registerClickEvents() {
+        binding.selecImageBtn.setOnClickListener {
+            openImageChooser()
+        }
+
+        binding.selectPdf.setOnClickListener {
+            openPdfChooser()
+        }
+
         binding.uploadBtn.setOnClickListener {
-            uploadImage()
+            uploadBook()
         }
 
         binding.bookBtn.setOnClickListener {
             startActivity(Intent(this, ImagesActivity::class.java))
         }
 
-        binding.selecImageBtn.setOnClickListener {
-            resultLauncher.launch("image/*")
+        binding.mySpacBtn.setOnClickListener {
+            // Handle My Space button click
         }
     }
 
-    private val resultLauncher = registerForActivityResult(
-        ActivityResultContracts.GetContent()
-    ) {
-
-        imageUri = it
-        binding.imageCardView.setImageURI(it)
+    private fun openImageChooser() {
+        val intent = Intent(Intent.ACTION_GET_CONTENT)
+        intent.type = "image/*"
+        startActivityForResult(intent, RC_IMAGE_PICKER)
     }
 
-
-    private fun initVars() {
-
-        storageRef = FirebaseStorage.getInstance().reference.child("Books")
-        firebaseFirestore = FirebaseFirestore.getInstance()
+    private fun openPdfChooser() {
+        val intent = Intent(Intent.ACTION_GET_CONTENT)
+        intent.type = "application/pdf"
+        startActivityForResult(intent, RC_PDF_PICKER)
     }
 
-    private fun uploadImage() {
-        binding.progressBar.visibility = View.VISIBLE
-        storageRef = storageRef.child(System.currentTimeMillis().toString())
-        imageUri?.let {
-            storageRef.putFile(it).addOnCompleteListener { task ->
-                if (task.isSuccessful) {
+    private fun uploadBook() {
+        val title = binding.booktitle.text.toString().trim()
+        val author = binding.author.text.toString().trim()
+        val description = binding.description.text.toString().trim()
 
-                    storageRef.downloadUrl.addOnSuccessListener { uri ->
+        if (validateForm(title, author, description)) {
+            showProgressBar()
 
-                        val title = binding.booktitle.text.toString()
-                        val author = binding.author.text.toString()
-                        val descrip = binding.description.text.toString()
+            val imageRef = firebaseStorage.reference.child("images/${UUID.randomUUID()}")
+            val pdfRef = firebaseStorage.reference.child("pdfs/${UUID.randomUUID()}")
 
-                        val book = BookData(title,descrip,uri.toString(),author)
-
-                        val map = HashMap<String, Any>()
-                        map["book"] = book
-
-                        firebaseFirestore.collection("Books").add(book).addOnCompleteListener { firestoreTask ->
-
-
-                            if (firestoreTask.isSuccessful){
-
-                                binding.booktitle.text.clear()
-                                binding.author.text.clear()
-                                binding.description.text.clear()
-                                Toast.makeText(this, "Uploaded Successfully", Toast.LENGTH_SHORT).show()
-
-                            }else{
-                                Toast.makeText(this, firestoreTask.exception?.message, Toast.LENGTH_SHORT).show()
-
-                            }
-                            binding.progressBar.visibility = View.GONE
-                            binding.imageCardView.setImageResource(R.drawable.frame)
-
+            // Upload image to Firebase Storage
+            imageRef.putFile(selectedImageUri)
+                .continueWithTask { imageUploadTask ->
+                    if (!imageUploadTask.isSuccessful) {
+                        imageUploadTask.exception?.let {
+                            throw it
                         }
                     }
-                } else {
-                    Toast.makeText(this, task.exception?.message, Toast.LENGTH_SHORT).show()
-                    binding.progressBar.visibility = View.GONE
-                    binding.imageCardView.setImageResource(R.drawable.frame)
+                    imageRef.downloadUrl
+                }
+                .addOnCompleteListener { imageDownloadTask ->
+                    if (imageDownloadTask.isSuccessful) {
+                        val imageUrl = imageDownloadTask.result.toString()
+
+                        // Upload PDF to Firebase Storage
+                        pdfRef.putFile(selectedPdfUri)
+                            .continueWithTask { pdfUploadTask ->
+                                if (!pdfUploadTask.isSuccessful) {
+                                    pdfUploadTask.exception?.let {
+                                        throw it
+                                    }
+                                }
+                                pdfRef.downloadUrl
+                            }
+                            .addOnCompleteListener { pdfDownloadTask ->
+                                if (pdfDownloadTask.isSuccessful) {
+                                    val pdfUrl = pdfDownloadTask.result.toString()
+
+                                    // Save book data to Firestore
+                                    val bookData = BookData(title,description ,imageUrl, author, pdfUrl)
+                                    firebaseFirestore.collection("Books")
+                                        .add(bookData)
+                                        .addOnSuccessListener {
+                                            hideProgressBar()
+                                            resetForm()
+                                            Toast.makeText(this, "Book uploaded successfully", Toast.LENGTH_SHORT).show()
+                                        }
+                                        .addOnFailureListener { exception ->
+                                            hideProgressBar()
+                                            Toast.makeText(this, "Error uploading book: ${exception.message}", Toast.LENGTH_SHORT).show()
+                                        }
+                                } else {
+                                    hideProgressBar()
+                                    Toast.makeText(this, "Error uploading PDF", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                    } else {
+                        hideProgressBar()
+                        Toast.makeText(this, "Error uploading image", Toast.LENGTH_SHORT).show()
+                    }
+                }
+        }
+    }
+
+    private fun validateForm(title: String, author: String, description: String): Boolean {
+        return when {
+            title.isEmpty() -> {
+                binding.booktitle.error = "Please enter the book title"
+                false
+            }
+            author.isEmpty() -> {
+                binding.author.error = "Please enter the author name"
+                false
+            }
+            description.isEmpty() -> {
+                binding.description.error = "Please enter the book description"
+                false
+            }
+            !this::selectedImageUri.isInitialized -> {
+                Toast.makeText(this, "Please select an image", Toast.LENGTH_SHORT).show()
+                false
+            }
+            !this::selectedPdfUri.isInitialized -> {
+                Toast.makeText(this, "Please select a PDF", Toast.LENGTH_SHORT).show()
+                false
+            }
+            else -> true
+        }
+    }
+
+    private fun resetForm() {
+        binding.booktitle.text.clear()
+        binding.author.text.clear()
+        binding.description.text.clear()
+        binding.imageCardView.setImageResource(R.drawable.catbackground)
+        selectedImageUri = Uri.EMPTY
+        selectedPdfUri = Uri.EMPTY
+    }
+
+    private fun showProgressBar() {
+        binding.progressBar.visibility = View.VISIBLE
+    }
+
+    private fun hideProgressBar() {
+        binding.progressBar.visibility = View.GONE
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (resultCode == Activity.RESULT_OK) {
+            when (requestCode) {
+                RC_IMAGE_PICKER -> {
+                    data?.data?.let {
+                        selectedImageUri = it
+                        binding.imageCardView.setImageURI(it)
+                    }
+                }
+                RC_PDF_PICKER -> {
+                    data?.data?.let {
+                        selectedPdfUri = it
+                    }
                 }
             }
         }
     }
+
+    companion object {
+        private const val RC_IMAGE_PICKER = 123
+        private const val RC_PDF_PICKER = 456
+    }
 }
+

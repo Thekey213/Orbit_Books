@@ -6,38 +6,59 @@ import androidx.recyclerview.widget.RecyclerView
 import com.squareup.picasso.Picasso
 import android.view.View
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 
-class AuthorAdapter(var authorList: List<BookData>, private val onItemClick: (BookData) -> Unit) : RecyclerView.Adapter<AuthorAdapter.AuthorViewHolder>() {
+import android.content.Context
+import android.content.Intent
 
-    class AuthorViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val titleTextView: TextView = itemView.findViewById(R.id.title)
-        val descriptionTextView: TextView = itemView.findViewById(R.id.description)
-        val imageView: ImageView = itemView.findViewById(R.id.imageView)
+import za.ac.iie.opsc7311.orbit_books.databinding.EachItemBinding
 
-        fun bind(book: BookData, onItemClick: (BookData) -> Unit) {
-            titleTextView.text = book.title
-            descriptionTextView.text = book.description
-
-            // Load image using Picasso or any other image loading library
-            Picasso.get().load(book.img).into(imageView)
-
-            itemView.setOnClickListener {
-                onItemClick(book)
-            }
-        }
-    }
+class AuthorAdapter(
+    var authorList: List<BookData>,
+    private val context: Context
+) : RecyclerView.Adapter<AuthorAdapter.AuthorViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AuthorViewHolder {
-        val itemView = LayoutInflater.from(parent.context).inflate(R.layout.each_item, parent, false)
-        return AuthorViewHolder(itemView)
+        val binding = EachItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return AuthorViewHolder(binding)
     }
 
     override fun onBindViewHolder(holder: AuthorViewHolder, position: Int) {
-        val currentItem = authorList[position]
-        holder.bind(currentItem, onItemClick)
+        val book = authorList[position]
+        holder.bind(book)
     }
 
-    override fun getItemCount() = authorList.size
+    override fun getItemCount(): Int {
+        return authorList.size
+    }
+
+    inner class AuthorViewHolder(private val binding: EachItemBinding) :
+        RecyclerView.ViewHolder(binding.root), View.OnClickListener {
+
+        init {
+            binding.root.setOnClickListener(this)
+        }
+
+        fun bind(book: BookData) {
+            binding.title.text = book.title
+            binding.description.text = book.description
+            Picasso.get().load(book.img).into(binding.imageView)
+            itemView.tag = book
+        }
+
+        override fun onClick(view: View) {
+            val book = view.tag as BookData
+            val intent = Intent(context, BookDetailsActivity::class.java).apply {
+                putExtra("title", book.title)
+                putExtra("description", book.description)
+                putExtra("img", book.img)
+                putExtra("pdfUrl", book.pdfUrl)
+            }
+            context.startActivity(intent)
+        }
+    }
 }
+
+
 

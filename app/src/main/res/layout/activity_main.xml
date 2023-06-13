@@ -50,6 +50,14 @@
                     android:layout_gravity="center"
                     android:text="Select image" />
 
+                <Button
+                    android:id="@+id/selectPdf"
+                    android:layout_width="157dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:text="Select Pdf" />
+
+
 
                 <EditText
                     android:id="@+id/booktitle"
