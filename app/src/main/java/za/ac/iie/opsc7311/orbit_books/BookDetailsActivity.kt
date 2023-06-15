@@ -25,6 +25,8 @@ import android.content.Intent
 
 class BookDetailsActivity : AppCompatActivity() {
 
+    private lateinit var firebaseStorage: FirebaseStorage
+    private lateinit var firebaseFirestore: FirebaseFirestore
     private lateinit var binding: ActivityBookDetailsBinding
     private var pdfUrl: String? = null
 
@@ -34,6 +36,7 @@ class BookDetailsActivity : AppCompatActivity() {
         binding = ActivityBookDetailsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        firebaseFirestore = FirebaseFirestore.getInstance()
         val title = intent.getStringExtra("title")
         val description = intent.getStringExtra("description")
         val img = intent.getStringExtra("img")
@@ -50,6 +53,12 @@ class BookDetailsActivity : AppCompatActivity() {
                 openPdfUrl(url)
             }
         }
+
+        binding.addToFavoritesButton.setOnClickListener {
+            addToFavorites(title, img)
+        }
+
+
     }
 
     private fun openPdfUrl(url: String) {
@@ -57,7 +66,25 @@ class BookDetailsActivity : AppCompatActivity() {
         intent.data = Uri.parse(url)
         startActivity(intent)
     }
+
+
+    private fun addToFavorites(title: String?, img: String?) {
+        val favoriteBook = hashMapOf(
+            "title" to title,
+            "image" to img
+        )
+
+        firebaseFirestore.collection("favorites")
+            .add(favoriteBook)
+            .addOnSuccessListener {
+                Toast.makeText(this, "Added to Favorites", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener { exception ->
+                Toast.makeText(this, "Failed to add to Favorites: ${exception.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
 }
+
 
 
 

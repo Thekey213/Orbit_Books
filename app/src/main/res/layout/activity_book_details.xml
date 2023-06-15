@@ -26,6 +26,21 @@
                 android:gravity="center"
                 android:orientation="vertical">
 
+
+                <Button
+                    android:id="@+id/addToFavoritesButton"
+                    android:layout_width="123dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="Add to Favorites" />
+
+                 <ProgressBar
+                    android:id="@+id/progressBar"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:indeterminateTint="@color/purple_200"
+                    android:visibility="gone" />
+
                 <ImageView
                     android:id="@+id/img"
                     android:layout_width="223dp"
@@ -72,7 +87,6 @@
 
 
 
-
             </LinearLayout>
 
 
@@ -92,6 +106,9 @@
                 android:layout_marginRight="10sp"
                 android:layout_gravity="right"
                 android:text="Download Pdf" />
+
+
+
 
         </LinearLayout>
 
